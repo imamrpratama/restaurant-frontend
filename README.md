@@ -63,7 +63,7 @@ Web:
 ### Step 1: Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/imamrpratama/restaurant-frontend.git
 cd restaurant_frontend
 ```
 
