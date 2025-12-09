@@ -64,7 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _googleSignIn() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.signInWithGoogle();
+    final success = await authProvider.googleLogin();
 
     if (!mounted) return;
 

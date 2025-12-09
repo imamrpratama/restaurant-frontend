@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/order.dart';
 import '../services/api_service.dart';
+import '../services/cache_service.dart';
 
 class OrderProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -16,7 +17,7 @@ class OrderProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // Fetch all orders
+  // Fetch all orders with caching
   Future<void> fetchOrders({String? status, int? tableId}) async {
     _setLoading(true);
     try {
@@ -34,6 +35,23 @@ class OrderProvider with ChangeNotifier {
         endpoint += '?' + queryParams.join('&');
       }
 
+      // Try to get from cache first (only if no filters)
+      if (status == null && tableId == null) {
+        final cachedData = await CacheService.getCachedOrders();
+        if (cachedData != null) {
+          _orders =
+              (cachedData as List).map((json) => Order.fromJson(json)).toList();
+          _errorMessage = null;
+          _setLoading(false);
+          notifyListeners();
+          print('Orders loaded from cache');
+
+          // Fetch fresh data in background
+          _fetchOrdersBackground(endpoint);
+          return;
+        }
+      }
+
       final response = await _apiService.get(endpoint);
 
       print('Fetch orders response status: ${response.statusCode}');
@@ -41,6 +59,12 @@ class OrderProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         _orders = (data as List).map((json) => Order.fromJson(json)).toList();
+
+        // Cache the result (only if no filters)
+        if (status == null && tableId == null) {
+          await CacheService.cacheOrders(data);
+        }
+
         _errorMessage = null;
       } else {
         throw Exception('Failed to load orders');
@@ -50,9 +74,26 @@ class OrderProvider with ChangeNotifier {
       print('Error fetching orders: $e');
     }
     _setLoading(false);
+    notifyListeners();
   }
 
-  // Fetch kitchen display orders
+  // Fetch orders in background without blocking UI
+  Future<void> _fetchOrdersBackground(String endpoint) async {
+    try {
+      final response = await _apiService.get(endpoint);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _orders = (data as List).map((json) => Order.fromJson(json)).toList();
+        await CacheService.cacheOrders(data);
+        notifyListeners();
+        print('Orders refreshed in background');
+      }
+    } catch (e) {
+      print('Background orders fetch error: $e');
+    }
+  }
+
+  // Fetch kitchen display orders with caching
   Future<void> fetchKitchenOrders({String? search}) async {
     _setLoading(true);
     try {
@@ -60,6 +101,23 @@ class OrderProvider with ChangeNotifier {
 
       if (search != null && search.isNotEmpty) {
         endpoint += '?search=$search';
+      }
+
+      // Try to get from cache first (only if no search)
+      if (search == null || search.isEmpty) {
+        final cachedData = await CacheService.getCachedKitchenDisplay();
+        if (cachedData != null) {
+          _kitchenOrders =
+              (cachedData as List).map((json) => Order.fromJson(json)).toList();
+          _errorMessage = null;
+          _setLoading(false);
+          notifyListeners();
+          print('Kitchen orders loaded from cache');
+
+          // Fetch fresh data in background
+          _fetchKitchenOrdersBackground(endpoint);
+          return;
+        }
       }
 
       final response = await _apiService.get(endpoint);
@@ -70,6 +128,12 @@ class OrderProvider with ChangeNotifier {
         final data = jsonDecode(response.body);
         _kitchenOrders =
             (data as List).map((json) => Order.fromJson(json)).toList();
+
+        // Cache the result (only if no search)
+        if (search == null || search.isEmpty) {
+          await CacheService.cacheKitchenDisplay(data);
+        }
+
         _errorMessage = null;
       } else {
         throw Exception('Failed to load kitchen orders');
@@ -79,6 +143,24 @@ class OrderProvider with ChangeNotifier {
       print('Error fetching kitchen orders: $e');
     }
     _setLoading(false);
+    notifyListeners();
+  }
+
+  // Fetch kitchen orders in background without blocking UI
+  Future<void> _fetchKitchenOrdersBackground(String endpoint) async {
+    try {
+      final response = await _apiService.get(endpoint);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _kitchenOrders =
+            (data as List).map((json) => Order.fromJson(json)).toList();
+        await CacheService.cacheKitchenDisplay(data);
+        notifyListeners();
+        print('Kitchen orders refreshed in background');
+      }
+    } catch (e) {
+      print('Background kitchen orders fetch error: $e');
+    }
   }
 
   // Create order
@@ -96,6 +178,11 @@ class OrderProvider with ChangeNotifier {
         final newOrder = Order.fromJson(jsonDecode(response.body));
         _orders.insert(0, newOrder);
         _errorMessage = null;
+
+        // Clear caches to refresh on next fetch
+        await CacheService.clearOrdersCache();
+        await CacheService.clearKitchenCache();
+
         _setLoading(false);
         notifyListeners();
         return true;
@@ -115,7 +202,7 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
-  // Update order status - FIXED
+  // Update order status
   Future<bool> updateOrderStatus(int orderId, String status) async {
     _setLoading(true);
     try {
@@ -152,6 +239,11 @@ class OrderProvider with ChangeNotifier {
         }
 
         _errorMessage = null;
+
+        // Clear caches to refresh on next fetch
+        await CacheService.clearOrdersCache();
+        await CacheService.clearKitchenCache();
+
         _setLoading(false);
         notifyListeners();
         return true;

@@ -31,9 +31,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final email = _emailController.text.trim();
+
+    // Check if email already exists
+    final emailCheckResult = await authProvider.checkEmailExists(email);
+
+    if (!mounted) return;
+
+    if (emailCheckResult['exists'] == true) {
+      // Email already exists, show what login methods are available
+      final loginMethods =
+          List<String>.from(emailCheckResult['login_methods'] ?? []);
+      String loginMethodsText = loginMethods.join(' or ');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'This email already exists. Please login using: $loginMethodsText',
+          ),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+      return;
+    }
+
+    // Email doesn't exist, proceed with registration
     final success = await authProvider.register(
       name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
+      email: email,
       password: _passwordController.text,
       passwordConfirmation: _confirmPasswordController.text,
     );
