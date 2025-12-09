@@ -135,7 +135,7 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
                 TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search by order number or table.. .',
+                    hintText: 'Search by order, table, or menu item.. .',
                     prefixIcon: const Icon(Icons.search_rounded),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
@@ -205,7 +205,7 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
                             color: Color(0xFFFC8181),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 12),
                         Text(
                           'Failed to load orders',
                           style: Theme.of(context).textTheme.titleLarge,
@@ -283,10 +283,10 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
                     padding: const EdgeInsets.all(20),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount:
-                          MediaQuery.of(context).size.width > 600 ? 3 : 2,
-                      childAspectRatio: 0.75,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                          MediaQuery.of(context).size.width > 600 ? 2 : 1,
+                      childAspectRatio: 1.2,
+                      crossAxisSpacing: 20,
+                      mainAxisSpacing: 20,
                     ),
                     itemCount: filteredOrders.length,
                     itemBuilder: (context, index) {
@@ -405,9 +405,11 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontSize: 16,
                               letterSpacing: 0.5,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           Row(
@@ -418,12 +420,16 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
                                 size: 14,
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                'Table ${order.table?.tableNumber ?? 'N/A'}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
+                              Expanded(
+                                child: Text(
+                                  'Table ${order.table?.tableNumber ?? 'N/A'}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -431,6 +437,7 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 6),
@@ -467,107 +474,112 @@ class _KitchenDisplayScreenState extends State<KitchenDisplayScreen> {
           ),
 
           // Items List
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              _getStatusIcon(order.status),
-                              size: 12,
+          Container(
+            padding: const EdgeInsets.all(12),
+            constraints: const BoxConstraints(minHeight: 60),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getStatusIcon(order.status),
+                            size: 12,
+                            color: statusColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            order.status.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
                               color: statusColor,
+                              letterSpacing: 0.5,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              order.status.toUpperCase(),
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: statusColor,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      const Spacer(),
-                      Text(
-                        '${order.items.length} items',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    ),
+                    Text(
+                      '${order.items.length} items',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: order.items.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        final item = order.items[index];
-                        return Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF667EEA),
-                                    Color(0xFF764BA2)
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(8),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (order.items.isNotEmpty)
+                  ...order.items.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final item = entry.value;
+                    return Padding(
+                      padding: EdgeInsets.only(
+                        bottom: index < order.items.length - 1 ? 6 : 0,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 24,
+                            height: 24,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
                               ),
-                              child: Center(
-                                child: Text(
-                                  '${item.quantity}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
+                              borderRadius: BorderRadius.circular(6),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
+                            child: Center(
                               child: Text(
-                                item.menu?.name ?? 'Unknown',
+                                '${item.quantity}',
                                 style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF2D3748),
-                                  height: 1.3,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 11,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                          ],
-                        );
-                      },
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              item.menu?.name ?? 'Unknown',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF2D3748),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList()
+                else
+                  Text(
+                    'No items',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
 

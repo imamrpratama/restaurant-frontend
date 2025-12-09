@@ -20,7 +20,7 @@ class MenuProvider with ChangeNotifier {
     _setLoading(true);
     try {
       final endpoint =
-          categoryId != null ? '/menus? category_id=$categoryId' : '/menus';
+          categoryId != null ? '/menus?category_id=$categoryId' : '/menus';
       final response = await _apiService.get(endpoint);
 
       print('Fetch menus response status: ${response.statusCode}');
