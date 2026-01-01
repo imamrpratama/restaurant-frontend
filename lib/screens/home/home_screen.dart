@@ -87,9 +87,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               } catch (e) {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to refresh data: ${e.toString()}'),
-                      backgroundColor: const Color(0xFFFC8181),
+                    const SnackBar(
+                      content: Text('Failed to refresh dashboard data. Please try again.'),
+                      backgroundColor: Color(0xFFFC8181),
                     ),
                   );
                 }
@@ -506,11 +506,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             ],
                           ),
                           const SizedBox(height: 12),
-                          ...orderProvider.orders
-                              .toList()
-                              ..sort((a, b) => b.createdAt.compareTo(a.createdAt))
-                              .take(3)
-                              .map((order) {
+                          ...() {
+                            final sortedOrders = orderProvider.orders.toList()
+                              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                            return sortedOrders.take(3).map((order) {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(16),
@@ -555,9 +554,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          order.table?.tableNumber != null 
-                                              ? 'Table ${order.table!.tableNumber}' 
-                                              : 'Table #${order.tableId}',
+                                          _getTableDisplay(order),
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: Colors.grey.shade600,
@@ -601,7 +598,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ],
                               ),
                             );
-                          }).toList(),
+                            });
+                          }().toList(),
                         ],
                       ),
                     ),
@@ -769,5 +767,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       default:
         return const Color(0xFF718096);
     }
+  }
+
+  String _getTableDisplay(Order order) {
+    if (order.table?.tableNumber != null) {
+      return 'Table ${order.table!.tableNumber}';
+    }
+    return 'Table #${order.tableId}';
   }
 }
