@@ -78,11 +78,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           opacity: _fadeAnimation,
           child: RefreshIndicator(
             onRefresh: () async {
-              await Future.wait([
-                orderProvider.fetchOrders(),
-                menuProvider.fetchMenus(),
-                tableProvider.fetchTables(),
-              ]);
+              try {
+                await Future.wait([
+                  orderProvider.fetchOrders(),
+                  menuProvider.fetchMenus(),
+                  tableProvider.fetchTables(),
+                ]);
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to refresh data: ${e.toString()}'),
+                      backgroundColor: const Color(0xFFFC8181),
+                    ),
+                  );
+                }
+              }
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -495,7 +506,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             ],
                           ),
                           const SizedBox(height: 12),
-                          ...orderProvider.orders.take(3).map((order) {
+                          ...orderProvider.orders
+                              .toList()
+                              ..sort((a, b) => b.createdAt.compareTo(a.createdAt))
+                              .take(3)
+                              .map((order) {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(16),
@@ -540,7 +555,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Table ${order.table?.tableNumber ?? '#${order.tableId}'}',
+                                          order.table?.tableNumber != null 
+                                              ? 'Table ${order.table!.tableNumber}' 
+                                              : 'Table #${order.tableId}',
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: Colors.grey.shade600,
