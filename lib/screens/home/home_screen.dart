@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/order_provider.dart';
 import '../../providers/menu_provider.dart';
 import '../../providers/table_provider.dart';
+import '../../models/order.dart';
 import '../categories/category_list_screen.dart';
 import '../menus/menu_list_screen.dart';
 import '../tables/table_list_screen.dart';
@@ -85,6 +86,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   tableProvider.fetchTables(),
                 ]);
               } catch (e) {
+                // Log error for debugging
+                print('Dashboard refresh error: $e');
+                
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -506,10 +510,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             ],
                           ),
                           const SizedBox(height: 12),
-                          ...() {
-                            final sortedOrders = orderProvider.orders.toList()
-                              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-                            return sortedOrders.take(3).map((order) {
+                          ..._getRecentOrders(orderProvider.orders).map((order) {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(16),
@@ -598,8 +599,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ],
                               ),
                             );
-                            });
-                          }().toList(),
+                          }).toList(),
                         ],
                       ),
                     ),
@@ -774,5 +774,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       return 'Table ${order.table!.tableNumber}';
     }
     return 'Table #${order.tableId}';
+  }
+
+  List<Order> _getRecentOrders(List<Order> orders) {
+    final sortedOrders = orders.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return sortedOrders.take(3).toList();
   }
 }
