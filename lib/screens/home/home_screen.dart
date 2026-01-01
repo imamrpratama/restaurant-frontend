@@ -62,15 +62,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final menuProvider = Provider.of<MenuProvider>(context);
     final tableProvider = Provider.of<TableProvider>(context);
 
-    // Calculate statistics
-    final totalOrders = orderProvider.orders.length;
-    final pendingOrders = orderProvider.orders.where((o) => o.status == 'pending').length;
-    final completedOrders = orderProvider.orders.where((o) => o.status == 'done' || o.status == 'ready').length;
-    final totalRevenue = orderProvider.orders
-        .where((o) => o.status == 'done' || o.status == 'ready')
-        .fold(0.0, (sum, order) => sum + order.totalAmount);
+    // Calculate statistics in a single pass for efficiency
+    var totalOrders = 0;
+    var pendingOrders = 0;
+    var completedOrders = 0;
+    var totalRevenue = 0.0;
+    
+    for (final order in orderProvider.orders) {
+      totalOrders++;
+      if (order.status == 'pending') {
+        pendingOrders++;
+      } else if (order.status == 'done' || order.status == 'ready') {
+        completedOrders++;
+        totalRevenue += order.totalAmount;
+      }
+    }
+    
     final totalMenus = menuProvider.menus.length;
     final totalTables = tableProvider.tables.length;
+    
+    // Get recent orders (sorted once here instead of in helper method)
+    final recentOrders = orderProvider.orders.isNotEmpty
+        ? (orderProvider.orders.toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt)))
+            .take(3)
+            .toList()
+        : <Order>[];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAFC),
@@ -87,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ]);
               } catch (e) {
                 // Log error for debugging
-                print('Dashboard refresh error: $e');
+                debugPrint('Dashboard refresh error: $e');
                 
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -510,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             ],
                           ),
                           const SizedBox(height: 12),
-                          ..._getRecentOrders(orderProvider.orders).map((order) {
+                          ...recentOrders.map((order) {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(16),
@@ -774,11 +791,5 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       return 'Table ${order.table!.tableNumber}';
     }
     return 'Table #${order.tableId}';
-  }
-
-  List<Order> _getRecentOrders(List<Order> orders) {
-    final sortedOrders = orders.toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return sortedOrders.take(3).toList();
   }
 }
