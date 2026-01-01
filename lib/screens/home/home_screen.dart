@@ -64,9 +64,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     // Calculate statistics
     final totalOrders = orderProvider.orders.length;
     final pendingOrders = orderProvider.orders.where((o) => o.status == 'pending').length;
-    final completedOrders = orderProvider.orders.where((o) => o.status == 'done').length;
+    final completedOrders = orderProvider.orders.where((o) => o.status == 'done' || o.status == 'ready').length;
     final totalRevenue = orderProvider.orders
-        .where((o) => o.status == 'done')
+        .where((o) => o.status == 'done' || o.status == 'ready')
         .fold(0.0, (sum, order) => sum + order.totalAmount);
     final totalMenus = menuProvider.menus.length;
     final totalTables = tableProvider.tables.length;
@@ -540,7 +540,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Table ${order.table?.tableNumber ?? order.tableId}',
+                                          'Table ${order.table?.tableNumber ?? '#${order.tableId}'}',
                                           style: TextStyle(
                                             fontSize: 14,
                                             color: Colors.grey.shade600,
